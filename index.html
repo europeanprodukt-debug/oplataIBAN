@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>IBAN Оплата — Швидкий платіж</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <style>
+    :root {
+      --blue: #0a3bff;
+      --blue-dark: #0029d6;
+      --bg-page: #f2f4f8;
+      --bg-input: #eceef2;
+      --text-main: #181a20;
+      --text-muted: #6c727f;
+      --border: #e4e7ee;
+      --radius-lg: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+
+    /* ================= КЛІЄНТСЬКИЙ ІНТЕРФЕЙС (ЯК НА ПЕРШОМУ СКРІНШОТІ) ================= */
+    .checkout-wrapper {
+      max-width: 440px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: #f5f7fb;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media (min-width: 500px) {
+      .checkout-wrapper {
+        min-height: auto;
+        margin: 24px auto;
+        border-radius: 28px;
+        overflow: hidden;
+        box-shadow: 0 20px 50px rgba(10, 59, 255, 0.14);
+        border: 1px solid #e2e6f0;
+      }
+    }
+
+    .blue-header {
+      background: linear-gradient(160deg, #0c44ff 0%, #0031e3 100%);
+      color: #fff;
+      padding: 18px 18px 72px;
+      position: relative;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-logo svg {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .how-to-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 13px;
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 4px 0;
+      font-family: inherit;
+    }
+
+    .checkout-body {
+      padding: 0 14px 28px;
+      margin-top: -54px;
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: var(--radius-lg);
+      box-shadow: 0 6px 24px rgba(16, 24, 40, 0.06);
+      padding: 16px;
+    }
+
+    /* Картка компанії */
+    .merchant-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 0;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .merchant-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .shop-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #eef3ff;
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .merchant-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .merchant-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .chevron {
+      color: var(--text-muted);
+      transition: transform 0.25s ease;
+      flex-shrink: 0;
+    }
+
+    .chevron.open {
+      transform: rotate(180deg);
+    }
+
+    .merchant-details {
+      display: none;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .merchant-details.open {
+      display: flex;
+    }
+
+    .detail-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: #f8f9fc;
+      padding: 9px 12px;
+      border-radius: 10px;
+    }
+
+    .detail-info {
+      min-width: 0;
+    }
+
+    .detail-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .detail-val {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      word-break: break-all;
+      margin-top: 2px;
+    }
+
+    .copy-mini {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--blue);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .copy-mini:active {
+      transform: scale(0.96);
+    }
+
+    /* Поля форми оплати */
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #49505c;
+      margin-bottom: 6px;
+    }
+
+    .form-label .req {
+      color: #e11d48;
+    }
+
+    .input-box {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1.5px solid transparent;
+      border-radius: 12px;
+      padding: 13px 14px;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-main);
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .input-box:focus {
+      background: #fff;
+      border-color: var(--blue);
+    }
+
+    .input-box[readonly] {
+      color: #262930;
+      cursor: default;
+    }
+
+    .purpose-preview {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #374151;
+      margin: -2px 0 16px;
+      line-height: 1.4;
+      background: #f3f6ff;
+      padding: 10px 12px;
+      border-radius: 10px;
+    }
+
+    .pay-btn {
+      width: 100%;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 15px 20px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 8px 20px rgba(10, 59, 255, 0.28);
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .pay-btn:hover {
+      background: var(--blue-dark);
+    }
+
+    .pay-btn:active {
+      transform: scale(0.985);
+    }
+
+    .policy-note {
+      text-align: center;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin: 12px 6px 0;
+      line-height: 1.45;
+    }
+
+    .bank-hint {
+      text-align: center;
+      font-size: 13px;
+      color: #555c68;
+      margin-top: 18px;
+      font-weight: 500;
+    }
+
+    .bank-divider {
+      text-align: center;
+      font-size: 12px;
+      color: #8b929e;
+      margin: 14px 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .bank-divider::before,
+    .bank-divider::after {
+      content: "";
+      height: 1px;
+      flex: 1;
+      background: var(--border);
+    }
+
+    .banks-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .bank-circle {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+      background: #fff;
+      padding: 0;
+    }
+
+    .bank-circle:active {
+      transform: scale(0.93);
+    }
+
+    .bank-mono {
+      background: #141414;
+      color: #fff;
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: -0.3px;
+      border-color: #141414;
+    }
+
+    .bank-p24 {
+      background: #1a4d2e;
+      color: #66d33f;
+      font-weight: 800;
+      font-size: 15px;
+      border: 2px solid #59c935;
+    }
+
+    .bank-abank {
+      background: #16a34a;
+      color: #fff;
+      font-weight: 800;
+      font-size: 18px;
+      border-color: #16a34a;
+    }
+
+    .bank-pumb {
+      background: #d91c24;
+      color: #fff;
+      font-weight: 800;
+      font-size: 11px;
+      border-color: #d91c24;
+    }
+
+    .bank-more {
+      background: #fff;
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: 1px;
+    }
+
+    .desktop-qr-inline {
+      display: none;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border);
+      text-align: center;
+    }
+
+    @media (min-width: 768px) {
+      .desktop-qr-inline {
+        display: block;
+      }
+    }
+
+    .qr-box-wrap {
+      display: inline-block;
+      padding: 12px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    }
+
+    /* ================= КАБІНЕТ ПРОДАВЦЯ (ГЕНЕРАТОР) ================= */
+    .admin-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    .admin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .admin-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .admin-badge {
+      background: var(--blue);
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .admin-title h1 {
+      margin: 0;
+      font-size: 21px;
+    }
+
+    .admin-title p {
+      margin: 2px 0 0;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (min-width: 860px) {
+      .admin-grid {
+        grid-template-columns: 1.15fr 0.85fr;
+      }
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .two-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 520px) {
+      .two-cols {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #49505c;
+      margin: 8px 0 14px;
+      cursor: pointer;
+    }
+
+    .result-box {
+      background: #f0f4ff;
+      border: 1px solid #c9d8ff;
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .result-box.visible {
+      display: block;
+    }
+
+    .result-link {
+      background: #fff;
+      border: 1px solid #d5dff7;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12.5px;
+      word-break: break-all;
+      color: #1e293b;
+      margin: 6px 0 10px;
+      max-height: 76px;
+      overflow-y: auto;
+    }
+
+    .viber-msg-area {
+      width: 100%;
+      min-height: 195px;
+      background: #fff;
+      border: 1px solid #d5dff7;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: #1e293b;
+      margin: 6px 0 10px;
+      resize: vertical;
+      outline: none;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-secondary {
+      background: #fff;
+      color: var(--blue);
+      border: 1.5px solid var(--blue);
+      border-radius: 10px;
+      padding: 9px 13px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary-sm {
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 9px 13px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-viber-sm {
+      background: #7360f2;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 9px 13px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-tg-sm {
+      background: #229ed9;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 9px 13px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-green-sm {
+      background: #16a34a;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 9px 13px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .preview-frame {
+      border: 8px solid #181a20;
+      border-radius: 34px;
+      overflow: hidden;
+      background: #f5f7fb;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.14);
+      max-width: 390px;
+      margin: 0 auto;
+    }
+
+    .preview-frame .checkout-wrapper {
+      margin: 0;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      min-height: auto;
+    }
+
+    .preview-frame .desktop-qr-inline {
+      display: none !important;
+    }
+
+    .hosting-tip {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #92400e;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      margin-bottom: 12px;
+      line-height: 1.45;
+    }
+
+    /* ================= МОДАЛЬНІ ВІКНА І TOAST ================= */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.58);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 999;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #fff;
+      border-radius: 22px;
+      max-width: 380px;
+      width: 100%;
+      padding: 20px;
+      position: relative;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+      text-align: center;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: #f1f5f9;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+      color: #475569;
+    }
+
+    .modal-card h3 {
+      margin: 4px 0 10px;
+      font-size: 18px;
+    }
+
+    .modal-card p, .modal-card li {
+      font-size: 13.5px;
+      color: #475569;
+      line-height: 1.5;
+      text-align: left;
+    }
+
+    .bank-list-modal {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .bank-list-btn {
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #181a20;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 13.5px;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s ease;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== РЕЖИМ ПРОДАВЦЯ ==================== -->
+  <div id="adminView" class="admin-container hidden">
+    <div class="admin-header">
+      <div class="admin-title">
+        <div class="admin-badge">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+        </div>
+        <div>
+          <h1>Генератор IBAN-оплат</h1>
+          <p>Створи платіжне посилання, текст для Viber та QR-код за стандартом НБУ</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-grid">
+      <div class="card">
+        <div id="localFileNotice" class="hosting-tip hidden">
+          ⚠️ Файл відкрито локально (<code>file://</code>). Щоб клієнти відкривали <b>сторінку вибору банку</b>, викладіть цей файл на безкоштовний <b>Netlify Drop</b> або <b>GitHub Pages</b>. Або вже зараз надсилайте клієнтам <b>пряме посилання НБУ</b>, <b>текст у Viber</b> чи <b>QR-код</b>!
+        </div>
+
+        <h2 class="section-title">1. Ваші реквізити (зберігаються автоматично)</h2>
+        <div class="two-cols">
+          <div class="form-group">
+            <label class="form-label">Назва магазину / бренду</label>
+            <input id="cfgBrand" class="input-box" type="text" placeholder='Напр.: "Ваша компанія"' />
+          </div>
+          <div class="form-group">
+            <label class="form-label">ЄДРПОУ або РНОКПП (ІПН) <span class="req">*</span></label>
+            <input id="cfgEdrpou" class="input-box" type="text" inputmode="numeric" maxlength="10" placeholder="1234567890" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Офіційна назва отримувача (ФОП або ТОВ) <span class="req">*</span></label>
+          <input id="cfgRecipient" class="input-box" type="text" maxlength="140" placeholder="ФОП Іваненко Іван Іванович" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Рахунок IBAN (29 символів) <span class="req">*</span></label>
+          <input id="cfgIban" class="input-box" type="text" maxlength="34" placeholder="UA213223130000026007233566001" />
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;" />
+
+        <h2 class="section-title">2. Сума та призначення</h2>
+        <div class="two-cols">
+          <div class="form-group">
+            <label class="form-label">Сума до сплати (грн) — або пусто</label>
+            <input id="cfgAmount" class="input-box" type="number" step="0.01" min="0" placeholder="199" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Призначення платежу</label>
+            <input id="cfgPurpose" class="input-box" type="text" maxlength="140" value="Оплата за товар" />
+          </div>
+        </div>
+
+        <label class="checkbox-row">
+          <input id="cfgEditable" type="checkbox" />
+          <span>Дозволити клієнту змінювати суму на сторінці оплати</span>
+        </label>
+
+        <button class="pay-btn" type="button" onclick="generatePayment()">Створити посилання, текст та QR</button>
+
+        <div id="resultBox" class="result-box">
+          <div style="font-weight:700;font-size:14px;">Посилання на сторінку оплати (синій інтерфейс):</div>
+          <div id="resCheckoutLink" class="result-link"></div>
+          <div class="btn-row" style="margin-bottom:14px;">
+            <button class="btn-primary-sm" type="button" onclick="copyText('resCheckoutLink')">Копіювати посилання</button>
+            <a id="resOpenBtn" class="btn-secondary" href="#" target="_blank">Відкрити сторінку</a>
+          </div>
+
+          <div style="font-weight:700;font-size:14px;">Пряме посилання НБУ (відразу в банк клієнта):</div>
+          <div id="resNbuLink" class="result-link"></div>
+          <div class="btn-row" style="margin-bottom:14px;">
+            <button class="btn-secondary" type="button" onclick="copyText('resNbuLink')">Копіювати НБУ-лінк</button>
+          </div>
+
+          <div style="font-weight:700;font-size:14px;">Готовий текст з реквізитами для Viber / Telegram:</div>
+          <textarea id="resViberText" class="viber-msg-area"></textarea>
+          <div class="btn-row" style="margin-bottom:14px;">
+            <button class="btn-primary-sm" type="button" onclick="copyViberMessage()">Скопіювати весь текст</button>
+            <a id="resViberBtn" class="btn-viber-sm" href="#">Надіслати у Viber</a>
+            <a id="resTgBtn" class="btn-tg-sm" href="#" target="_blank">Надіслати в Telegram</a>
+          </div>
+
+          <div style="font-weight:700;font-size:14px;margin-bottom:8px;">QR-код для сканування або вставки в чат:</div>
+          <div style="text-align:center;margin-bottom:10px;">
+            <div class="qr-box-wrap">
+              <canvas id="adminQrCanvas" width="220" height="220"></canvas>
+            </div>
+          </div>
+          <div class="btn-row" style="justify-content:center;">
+            <button class="btn-green-sm" type="button" onclick="shareQrAndText()">Поділитися (Фото + Текст)</button>
+            <button class="btn-secondary" type="button" onclick="copyQrPhoto('adminQrCanvas')">Скопіювати фото QR</button>
+            <button class="btn-secondary" type="button" onclick="downloadQrPng('adminQrCanvas')">Завантажити PNG</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Живий попередній перегляд мобільного екрана -->
+      <div>
+        <div style="text-align:center;font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:10px;">
+          Попередній перегляд (так побачить клієнт)
+        </div>
+        <div id="previewHost" class="preview-frame"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== РЕЖИМ КЛІЄНТА ==================== -->
+  <div id="clientView" class="hidden"></div>
+
+  <!-- ==================== ШАБЛОН СТОРІНКИ ОПЛАТИ ==================== -->
+  <template id="checkoutTemplate">
+    <div class="checkout-wrapper">
+      <div class="blue-header">
+        <div class="header-top">
+          <div class="brand-logo">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 2.6c-.3-.3-.8-.4-1.2-.2L2.4 10.2c-.5.2-.7.7-.6 1.2.1.4.4.8.9.9l6.7 1.7 1.7 6.7c.1.5.5.8.9.9h.2c.4 0 .8-.2 1-.6l8.9-17.2c.2-.4.1-.9-.2-1.2z"/></svg>
+            <span class="js-header-brand">IBAN Оплата</span>
+          </div>
+          <button type="button" class="how-to-btn js-how-btn">Як здійснити оплату</button>
+        </div>
+      </div>
+
+      <div class="checkout-body">
+        <!-- Картка компанії -->
+        <div class="card">
+          <button type="button" class="merchant-toggle js-toggle-details">
+            <div class="merchant-left">
+              <div class="shop-avatar">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-4h16l1 4"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 12v8h14v-8"/><path d="M9 20v-5h6v5"/></svg>
+              </div>
+              <div style="min-width:0;">
+                <div class="merchant-title js-brand-title">"Ваша компанія"</div>
+                <div class="merchant-sub">Показати деталі оплати</div>
+              </div>
+            </div>
+            <svg class="chevron js-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+
+          <div class="merchant-details js-details-panel">
+            <div class="detail-row">
+              <div class="detail-info">
+                <div class="detail-label">Отримувач</div>
+                <div class="detail-val js-det-recipient"></div>
+              </div>
+              <button type="button" class="copy-mini js-copy-field" data-field="recipient">Копіювати</button>
+            </div>
+            <div class="detail-row">
+              <div class="detail-info">
+                <div class="detail-label">Рахунок IBAN</div>
+                <div class="detail-val js-det-iban"></div>
+              </div>
+              <button type="button" class="copy-mini js-copy-field" data-field="iban">Копіювати</button>
+            </div>
+            <div class="detail-row">
+              <div class="detail-info">
+                <div class="detail-label">ЄДРПОУ / РНОКПП</div>
+                <div class="detail-val js-det-edrpou"></div>
+              </div>
+              <button type="button" class="copy-mini js-copy-field" data-field="edrpou">Копіювати</button>
+            </div>
+            <div class="detail-row">
+              <div class="detail-info">
+                <div class="detail-label">Призначення платежу</div>
+                <div class="detail-val js-det-purpose"></div>
+              </div>
+              <button type="button" class="copy-mini js-copy-field" data-field="purpose">Копіювати</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Картка форми платежу -->
+        <div class="card">
+          <div class="form-group">
+            <label class="form-label">Сума до сплати: <span class="req">*</span></label>
+            <input type="number" step="0.01" min="0" class="input-box js-amount-input" placeholder="Введіть суму" />
+          </div>
+
+          <div class="purpose-preview js-purpose-line">Оплата за товар</div>
+
+          <button type="button" class="pay-btn js-main-pay-btn">Оплатити 199.00 ₴</button>
+
+          <div class="policy-note">
+            Продовжуючи, переказ здійснюється напряму за реквізитами IBAN через офіційний застосунок вашого банку без комісії сервісу.
+          </div>
+
+          <div class="bank-hint">Відкриється ваш основний банківський додаток</div>
+          <div class="bank-divider">або оберіть зі списку</div>
+
+          <div class="banks-row">
+            <button type="button" class="bank-circle bank-mono js-bank-btn" data-pkg="com.ftband.mono" title="monobank">mono</button>
+            <button type="button" class="bank-circle bank-p24 js-bank-btn" data-pkg="ua.privatbank.ap24" title="Приват24">24</button>
+            <button type="button" class="bank-circle bank-abank js-bank-btn" data-pkg="ua.com.abank" title="àbank24">à</button>
+            <button type="button" class="bank-circle bank-pumb js-bank-btn" data-pkg="com.fuib.android.spot" title="ПУМБ">ПУМБ</button>
+            <button type="button" class="bank-circle bank-more js-more-banks" title="Інші банки та QR-код">...</button>
+          </div>
+
+          <div class="desktop-qr-inline">
+            <div style="font-size:13px;font-weight:600;color:#475569;margin-bottom:10px;">
+              Платите з комп'ютера? Скануйте QR-код камерою або в банку:
+            </div>
+            <div class="qr-box-wrap">
+              <canvas class="js-inline-qr" width="180" height="180"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Модалка "Як оплатити" -->
+  <div id="howModal" class="modal-backdrop">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal('howModal')">&times;</button>
+      <h3>Як здійснити оплату</h3>
+      <ol style="padding-left:18px;margin:10px 0;">
+        <li>Натисніть синю кнопку <b>«Оплатити»</b> або оберіть іконку вашого банку.</li>
+        <li>Відкриється застосунок банку, де <b>всі реквізити вже заповнені</b> (IBAN, сума та «Оплата за товар»).</li>
+        <li>Перевірте дані та підтвердіть переказ.</li>
+        <li>Якщо ви відкрили сторінку з комп'ютера — просто відскануйте QR-код камерою телефона або скопіюйте реквізити вгорі.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Модалка "Інші банки / QR-код" -->
+  <div id="moreBanksModal" class="modal-backdrop">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal('moreBanksModal')">&times;</button>
+      <h3>Оплата через QR або інший банк</h3>
+      <p style="text-align:center;margin:4px 0 12px;">Відскануйте код у застосунку будь-якого українського банку:</p>
+      <div class="qr-box-wrap">
+        <canvas id="modalQrCanvas" width="190" height="190"></canvas>
+      </div>
+      <div class="bank-list-modal">
+        <button type="button" class="bank-list-btn" onclick="openBankApp('ua.alfabank.mobile.android')">Sense SuperApp</button>
+        <button type="button" class="bank-list-btn" onclick="openBankApp('ua.oschadbank.flumo')">Ощад</button>
+        <button type="button" class="bank-list-btn" onclick="openBankApp('')">За замовчуванням</button>
+        <button type="button" class="bank-list-btn" onclick="downloadQrPng('modalQrCanvas')">Зберегти QR</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Скопійовано!</div>
+
+  <script>
+    // ================== УТИЛІТИ КОДУВАННЯ ==================
+    function toBase64Url(str) {
+      const bytes = new TextEncoder().encode(str);
+      let bin = "";
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+
+    function fromBase64Url(b64) {
+      let s = b64.replace(/-/g, "+").replace(/_/g, "/");
+      while (s.length % 4) s += "=";
+      const bin = atob(s);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder().decode(bytes);
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2300);
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add("open");
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("open");
+    }
+
+    // ================== СТАНДАРТ НБУ (Постанова №97 / BCD 002) ==================
+    function buildNbuLink(data) {
+      const cleanIban = (data.iban || "").replace(/\s+/g, "").toUpperCase();
+      const num = parseFloat(data.amount);
+      const amountStr = !isNaN(num) && num > 0 ? "UAH" + num.toFixed(2) : "";
+      const purpose = (data.purpose || "Оплата за товар").trim().slice(0, 140);
+      const recipient = (data.recipient || "").trim().slice(0, 140);
+      const edrpou = (data.edrpou || "").replace(/\D/g, "");
+
+      const lines = [
+        "BCD",
+        "002",
+        "1",        // UTF-8
+        "UCT",
+        "",
+        recipient,
+        cleanIban,
+        amountStr,
+        edrpou,
+        "",
+        "",
+        purpose,
+        "",
+        ""
+      ];
+      return "https://qr.bank.gov.ua/" + toBase64Url(lines.join("\n"));
+    }
+
+    // ================== МАЛЮВАННЯ QR ЗІ ЗНАКОМ ₴ ==================
+    function renderNbuQr(canvas, url) {
+      if (!canvas || typeof qrcode === "undefined") return;
+      const qr = qrcode(0, "M");
+      qr.addData(url);
+      qr.make();
+
+      const count = qr.getModuleCount();
+      const size = canvas.width;
+      const margin = 10;
+      const cell = (size - margin * 2) / count;
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, size, size);
+
+      ctx.fillStyle = "#000000";
+      for (let r = 0; r < count; r++) {
+        for (let c = 0; c < count; c++) {
+          if (qr.isDark(r, c)) {
+            ctx.fillRect(
+              Math.floor(margin + c * cell),
+              Math.floor(margin + r * cell),
+              Math.ceil(cell),
+              Math.ceil(cell)
+            );
+          }
+        }
+      }
+
+      const center = size / 2;
+      const radius = size * 0.13;
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(center, center, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "#0a3bff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = "#0a3bff";
+      ctx.font = "bold " + Math.round(size * 0.14) + "px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("₴", center, center + 1);
+    }
+
+    function downloadQrPng(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const a = document.createElement("a");
+      a.download = "iban-qr-oplata.png";
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+    }
+
+    async function copyQrPhoto(canvasId) {
+      try {
+        const canvas = document.getElementById(canvasId);
+        const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+        if (navigator.clipboard && window.ClipboardItem) {
+          await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+          showToast("Фото QR скопійовано! Вставте у чат (Ctrl+V)");
+          return;
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+      downloadQrPng(canvasId);
+      showToast("QR завантажено у PNG");
+    }
+
+    async function shareQrAndText() {
+      const text = document.getElementById("resViberText").value;
+      const canvas = document.getElementById("adminQrCanvas");
+      if (navigator.share) {
+        try {
+          const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+          const file = new File([blob], "qr-oplata.png", { type: "image/png" });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], text: text });
+            return;
+          }
+          await navigator.share({ text: text });
+          return;
+        } catch (err) {
+          if (err.name === "AbortError") return;
+        }
+      }
+      copyViberMessage();
+      showToast("Текст скопійовано! Надішліть у Viber або Telegram");
+    }
+
+    // ================== ВІДКРИТТЯ БАНКІВ ==================
+    let activeCheckoutData = null;
+
+    function openBankApp(androidPkg) {
+      if (!activeCheckoutData) return;
+      const nbuUrl = buildNbuLink(activeCheckoutData);
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      if (!isMobile) {
+        renderNbuQr(document.getElementById("modalQrCanvas"), nbuUrl);
+        openModal("moreBanksModal");
+        return;
+      }
+
+      if (isAndroid && androidPkg) {
+        const cleanPath = nbuUrl.replace(/^https?:\/\//, "");
+        const fallback = encodeURIComponent(nbuUrl);
+        window.location.href = `intent://${cleanPath}#Intent;scheme=https;package=${androidPkg};S.browser_fallback_url=${fallback};end`;
+      } else {
+        window.location.href = nbuUrl;
+      }
+    }
+
+    // ================== МОНТУВАННЯ СТОРІНКИ ОПЛАТИ ==================
+    function mountCheckout(container, data, isPreview) {
+      container.innerHTML = "";
+      const tpl = document.getElementById("checkoutTemplate").content.cloneNode(true);
+      container.appendChild(tpl);
+
+      const state = { ...data };
+      if (!isPreview) activeCheckoutData = state;
+
+      const root = container.querySelector(".checkout-wrapper");
+      const headerBrand = root.querySelector(".js-header-brand");
+      const brandTitle = root.querySelector(".js-brand-title");
+      const amountInp = root.querySelector(".js-amount-input");
+      const purposeLine = root.querySelector(".js-purpose-line");
+      const mainBtn = root.querySelector(".js-main-pay-btn");
+      const inlineQr = root.querySelector(".js-inline-qr");
+
+      headerBrand.textContent = state.brand ? state.brand : "IBAN Оплата";
+      brandTitle.textContent = state.brand || state.recipient || "Компанія";
+
+      const purposeText = state.purpose || "Оплата за товар";
+      root.querySelector(".js-det-recipient").textContent = state.recipient || "—";
+      root.querySelector(".js-det-iban").textContent = state.iban || "—";
+      root.querySelector(".js-det-edrpou").textContent = state.edrpou || "—";
+      root.querySelector(".js-det-purpose").textContent = purposeText;
+      purposeLine.textContent = "Призначення: " + purposeText;
+
+      amountInp.value = state.amount || "";
+      if (!state.editable && state.amount) {
+        amountInp.readOnly = true;
+      }
+
+      function syncUI() {
+        state.amount = amountInp.value;
+        const num = parseFloat(state.amount);
+        mainBtn.textContent = !isNaN(num) && num > 0
+          ? `Оплатити ${num.toFixed(2)} ₴`
+          : "Оплатити за реквізитами";
+
+        if (!isPreview) {
+          activeCheckoutData = state;
+          renderNbuQr(inlineQr, buildNbuLink(state));
+        }
+      }
+
+      amountInp.addEventListener("input", syncUI);
+      syncUI();
+
+      // Розгортання реквізитів
+      const detailsBtn = root.querySelector(".js-toggle-details");
+      const detailsPanel = root.querySelector(".js-details-panel");
+      const chevron = root.querySelector(".js-chevron");
+      detailsBtn.addEventListener("click", () => {
+        detailsPanel.classList.toggle("open");
+        chevron.classList.toggle("open");
+      });
+
+      // Кнопки копіювання
+      root.querySelectorAll(".js-copy-field").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const f = btn.dataset.field;
+          const map = {
+            recipient: state.recipient,
+            iban: (state.iban || "").replace(/\s+/g, ""),
+            edrpou: state.edrpou,
+            purpose: purposeText
+          };
+          navigator.clipboard.writeText(map[f] || "");
+          showToast("Скопійовано!");
+        });
+      });
+
+      root.querySelector(".js-how-btn").addEventListener("click", () => openModal("howModal"));
+
+      mainBtn.addEventListener("click", () => {
+        if (isPreview) return showToast("У реальному посиланні відкриється банк клієнта");
+        openBankApp("");
+      });
+
+      root.querySelectorAll(".js-bank-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          if (isPreview) return showToast("Відкриє вибраний банк на смартфоні");
+          openBankApp(btn.dataset.pkg);
+        });
+      });
+
+      root.querySelector(".js-more-banks").addEventListener("click", () => {
+        if (isPreview) return showToast("Відкриє список інших банків та QR-код");
+        renderNbuQr(document.getElementById("modalQrCanvas"), buildNbuLink(state));
+        openModal("moreBanksModal");
+      });
+    }
+
+    // ================== ЛОГІКА КАБІНЕТУ ПРОДАВЦЯ ==================
+    const STORAGE_KEY = "iban_seller_cfg_v3";
+
+    function readAdminForm() {
+      return {
+        brand: document.getElementById("cfgBrand").value.trim(),
+        recipient: document.getElementById("cfgRecipient").value.trim(),
+        iban: document.getElementById("cfgIban").value.replace(/\s+/g, "").toUpperCase(),
+        edrpou: document.getElementById("cfgEdrpou").value.replace(/\D/g, ""),
+        amount: document.getElementById("cfgAmount").value.trim(),
+        purpose: document.getElementById("cfgPurpose").value.trim() || "Оплата за товар",
+        editable: document.getElementById("cfgEditable").checked
+      };
+    }
+
+    function saveSellerProfile(d) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        brand: d.brand,
+        recipient: d.recipient,
+        iban: d.iban,
+        edrpou: d.edrpou,
+        purpose: d.purpose
+      }));
+    }
+
+    function updatePreview() {
+      const d = readAdminForm();
+      saveSellerProfile(d);
+      mountCheckout(document.getElementById("previewHost"), {
+        brand: d.brand || '"Ваша компанія"',
+        recipient: d.recipient || "ФОП Іваненко Іван Іванович",
+        iban: d.iban || "UA213223130000026007233566001",
+        edrpou: d.edrpou || "1234567890",
+        amount: d.amount || "199",
+        purpose: d.purpose || "Оплата за товар",
+        editable: d.editable
+      }, true);
+    }
+
+    function buildViberMessage(d, nbuUrl, checkoutUrl) {
+      const num = parseFloat(d.amount);
+      const sumLine = !isNaN(num) && num > 0
+        ? `✅ СУМА: ${num.toFixed(2)} грн`
+        : `✅ СУМА: введіть при оплаті`;
+
+      const payLink = window.location.protocol === "file:" ? nbuUrl : checkoutUrl;
+
+      return [
+        "Доброго дня! 😊",
+        "Дякуємо за замовлення!",
+        "",
+        sumLine,
+        "",
+        "⚡ Швидка оплата в 1 клік (реквізити підтягнуться в банку автоматично):",
+        payLink,
+        "",
+        "Реквізити для оплати вручну:",
+        `Отримувач: ${d.recipient}`,
+        `ЄДРПОУ: ${d.edrpou}`,
+        `IBAN: ${d.iban}`,
+        `Призначення платежу: ${d.purpose}`
+      ].join("\n");
+    }
+
+    function syncMessengerButtons() {
+      const text = document.getElementById("resViberText").value;
+      const checkoutUrl = document.getElementById("resCheckoutLink").textContent;
+      document.getElementById("resViberBtn").href = "viber://forward?text=" + encodeURIComponent(text);
+      document.getElementById("resTgBtn").href =
+        "https://t.me/share/url?url=" + encodeURIComponent(checkoutUrl) +
+        "&text=" + encodeURIComponent(text);
+    }
+
+    function generatePayment() {
+      const d = readAdminForm();
+      if (!d.recipient || !d.iban || !d.edrpou) {
+        alert("Заповніть обов'язкові поля: Офіційна назва отримувача, IBAN та ЄДРПОУ/РНОКПП!");
+        return;
+      }
+      if (!/^UA\d{27}$/.test(d.iban)) {
+        alert("Перевірте IBAN — в Україні він починається з UA та має 29 символів (UA + 27 цифр).");
+        return;
+      }
+
+      saveSellerProfile(d);
+
+      const compact = {
+        b: d.brand,
+        r: d.recipient,
+        i: d.iban,
+        e: d.edrpou,
+        a: d.amount,
+        p: d.purpose,
+        ed: d.editable ? 1 : 0
+      };
+
+      const baseUrl = window.location.href.split("#")[0].split("?")[0];
+      const checkoutUrl = baseUrl + "#p=" + toBase64Url(JSON.stringify(compact));
+      const nbuUrl = buildNbuLink(d);
+
+      document.getElementById("resCheckoutLink").textContent = checkoutUrl;
+      document.getElementById("resNbuLink").textContent = nbuUrl;
+      document.getElementById("resOpenBtn").href = checkoutUrl;
+      document.getElementById("resViberText").value = buildViberMessage(d, nbuUrl, checkoutUrl);
+
+      syncMessengerButtons();
+      renderNbuQr(document.getElementById("adminQrCanvas"), nbuUrl);
+      document.getElementById("resultBox").classList.add("visible");
+      showToast("Посилання, текст і QR-код готові!");
+    }
+
+    function copyText(elementId) {
+      const text = document.getElementById(elementId).textContent;
+      navigator.clipboard.writeText(text);
+      showToast("Скопійовано!");
+    }
+
+    function copyViberMessage() {
+      const text = document.getElementById("resViberText").value;
+      navigator.clipboard.writeText(text);
+      showToast("Текст з реквізитами скопійовано!");
+    }
+
+    // ================== ІНІЦІАЛІЗАЦІЯ ==================
+    function init() {
+      const hash = window.location.hash;
+      if (hash && hash.startsWith("#p=")) {
+        try {
+          const raw = JSON.parse(fromBase64Url(hash.slice(3)));
+          const data = {
+            brand: raw.b || "",
+            recipient: raw.r || "",
+            iban: raw.i || "",
+            edrpou: raw.e || "",
+            amount: raw.a || "",
+            purpose: raw.p || "Оплата за товар",
+            editable: !!raw.ed
+          };
+          document.getElementById("adminView").classList.add("hidden");
+          const clientView = document.getElementById("clientView");
+          clientView.classList.remove("hidden");
+          mountCheckout(clientView, data, false);
+          return;
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      // Режим продавця
+      document.getElementById("clientView").classList.add("hidden");
+      document.getElementById("adminView").classList.remove("hidden");
+
+      if (window.location.protocol === "file:") {
+        document.getElementById("localFileNotice").classList.remove("hidden");
+      }
+
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        if (saved.brand) document.getElementById("cfgBrand").value = saved.brand;
+        if (saved.recipient) document.getElementById("cfgRecipient").value = saved.recipient;
+        if (saved.iban) document.getElementById("cfgIban").value = saved.iban;
+        if (saved.edrpou) document.getElementById("cfgEdrpou").value = saved.edrpou;
+        if (saved.purpose) document.getElementById("cfgPurpose").value = saved.purpose;
+      } catch (e) {}
+
+      ["cfgBrand", "cfgRecipient", "cfgIban", "cfgEdrpou", "cfgAmount", "cfgPurpose", "cfgEditable"]
+        .forEach(id => {
+          document.getElementById(id).addEventListener("input", updatePreview);
+          document.getElementById(id).addEventListener("change", updatePreview);
+        });
+
+      document.getElementById("resViberText").addEventListener("input", syncMessengerButtons);
+
+      updatePreview();
+    }
+
+    window.addEventListener("hashchange", init);
+    init();
+  </script>
+</body>
+</html>
